@@ -1,5 +1,5 @@
 import { Server } from "socket.io";
-import { PatientEventEnum } from "./models/patient-event.enum";
+import { PatientEventsEnum } from "./models/patient-events.enum";
 
 const io = new Server({
   cors: {
@@ -16,9 +16,16 @@ io.on("connection", (socket) => {
     console.log(`User ${socket.id} joined room ${roomId}`);
   });
 
-  socket.on("patientEvent", (roomId: string, event: PatientEventEnum) => {
+  socket.on("getUserRooms", (callback: (rooms: string[]) => void) => {
+    const rooms = Array.from(socket.rooms).filter((room) => room !== socket.id);
+    callback(rooms);
+    console.log(`User ${socket.id} requested rooms`);
+  });
+
+  socket.on("patientEvent", (event: PatientEventsEnum) => {
+    const rooms = Array.from(socket.rooms);
+    io.to(rooms[1]).emit("patientEvent", event, rooms[1]);
     console.log(`User ${socket.id} sent event: ${event}`);
-    io.to(roomId).emit("patientEvent", event);
   });
 
   socket.on("disconnect", () => {
