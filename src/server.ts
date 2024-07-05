@@ -1,5 +1,5 @@
 import { Server } from "socket.io";
-import { PatientEventsEnum } from "./models/patient-events.enum";
+import { PatientEvent } from "./models/patient.event";
 
 const io = new Server({
   cors: {
@@ -22,11 +22,31 @@ io.on("connection", (socket) => {
     console.log(`User ${socket.id} requested rooms`);
   });
 
-  socket.on("patientEvent", (event: PatientEventsEnum) => {
-    const rooms = Array.from(socket.rooms);
-    io.to(rooms[1]).emit("patientEvent", event, rooms[1]);
-    console.log(`User ${socket.id} sent event: ${event}`);
+  socket.on("patientEvent", (patientEvent: PatientEvent) => {
+    io.to(patientEvent.patientId).emit("patientEvent", patientEvent);
+    console.log(`User ${socket.id} sent event: ${patientEvent.event}`);
   });
+
+  // WebRTC
+
+  socket.on("setupWebRTCConnection", (patientId: string) => {
+    io.to(patientId).emit("setupWebRTCConnection", socket.id);
+  });
+
+  socket.on("closeWebRTCConnection", (patientId: string) => {
+    io.to(patientId).emit("closeWebRTCConnection", socket.id);
+  });
+
+  socket.on("patientWebRTCSignal", (patientId: string, signal: any) => {
+    io.to(patientId).emit("patientWebRTCSignal", socket.id, signal);
+  });
+
+  socket.on(
+    "caregiverWebRTCSignal",
+    (socketId: string, patientId: string, signal: any) => {
+      io.to(socketId).emit("caregiverWebRTCSignal", patientId, signal);
+    }
+  );
 
   socket.on("disconnect", () => {
     console.log("User disconnected: ", socket.id);
